@@ -203,24 +203,24 @@ void TebVisualization::publishObstacles(const ObstContainer& obstacles, double s
         point.z = 0;
         marker.points.push_back(point);
       }
-      else // Spatiotemporally point obstacles become a line
-      {
-        marker.type = visualization_msgs::Marker::LINE_LIST;
-        geometry_msgs::Point start;
-        start.x = pobst->x();
-        start.y = pobst->y();
-        start.z = 0;
-        marker.points.push_back(start);
+      // else // Spatiotemporally point obstacles become a line
+      // {
+      //   marker.type = visualization_msgs::Marker::LINE_LIST;
+      //   geometry_msgs::Point start;
+      //   start.x = pobst->x();
+      //   start.y = pobst->y();
+      //   start.z = 0;
+      //   marker.points.push_back(start);
 
-        geometry_msgs::Point end;
-        double t = 20;
-        Eigen::Vector2d pred;
-        pobst->predictCentroidConstantVelocity(t, pred);
-        end.x = pred[0];
-        end.y = pred[1];
-        end.z = cfg_->hcp.visualize_with_time_as_z_axis_scale*t;
-        marker.points.push_back(end);
-      }
+      //   geometry_msgs::Point end;
+      //   double t = 20;
+      //   Eigen::Vector2d pred;
+      //   pobst->predictCentroidConstantVelocity(t, pred);
+      //   end.x = pred[0];
+      //   end.y = pred[1];
+      //   end.z = cfg_->hcp.visualize_with_time_as_z_axis_scale*t;
+      //   marker.points.push_back(end);
+      // }
     }
     
     marker.scale.x = scale;

@@ -3,10 +3,20 @@ project(teb_local_planner)
 
 # Set to Release in order to speed up the program significantly
 set(CMAKE_BUILD_TYPE Release) #None, Debug, Release, RelWithDebInfo, MinSizeRel
+cmake_minimum_required(VERSION 2.8.3)
 
+
+
+
+include_directories(${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
   base_local_planner
+  cv_bridge
+  image_transport
+  roscpp
+  sensor_msgs
+  std_msgs
   costmap_2d
   costmap_converter
   cmake_modules
@@ -34,6 +44,8 @@ message(STATUS "${CMAKE_MODULE_PATH}")
 find_package(Boost REQUIRED COMPONENTS system thread graph)
 find_package(SUITESPARSE REQUIRED)
 find_package(G2O REQUIRED)
+find_package( OpenCV REQUIRED )
+find_package(PCL 1.7 REQUIRED)
 
 # Eigen3 FindScript Backward compatibility (ubuntu saucy)
 # Since FindEigen.cmake is deprecated starting from jade.
@@ -75,7 +87,7 @@ else()
   by linked third party packages starting from ROS Jade. Ignore this message for ROS Indigo.")
 endif()
 endif()
-
+add_compile_options(-fPIC)
 ################################################
 ## Declare ROS messages, services and actions ##
 ################################################
@@ -171,14 +183,20 @@ catkin_package(
 ## Build ##
 ###########
 
+
+
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(include)
 include_directories(
   ${EXTERNAL_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
+link_directories(${PCL_LIBRARY_DIRS})
 ## Build the teb_local_planner library
 
 add_library(teb_local_planner
@@ -203,6 +221,12 @@ target_link_libraries(teb_local_planner
    ${catkin_LIBRARIES}
 )
 
+add_executable(sample_cv_bridge_node src/sample_cv_bridge_node.cpp)
+ target_link_libraries(sample_cv_bridge_node
+   ${catkin_LIBRARIES}
+   ${OpenCV_LIBRARIES}
+   ${PCL_LIBRARIES}
+ )
 
 
 ## Build additional executables

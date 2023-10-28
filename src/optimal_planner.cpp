@@ -290,10 +290,12 @@ bool TebOptimalPlanner::plan(const tf::Pose& start, const tf::Pose& goal, const 
 bool TebOptimalPlanner::plan(const PoseSE2& start, const PoseSE2& goal, const geometry_msgs::Twist* start_vel, bool free_goal_vel)
 {	
   ROS_ASSERT_MSG(initialized_, "Call initialize() first.");
+  ROS_INFO("Start Plan");
   if (!teb_.isInit())
   {
     // init trajectory
     teb_.initTrajectoryToGoal(start, goal, 0, cfg_->robot.max_vel_x, cfg_->trajectory.min_samples, cfg_->trajectory.allow_init_with_backwards_motion); // 0 intermediate samples, but dt=1 -> autoResize will add more samples before calling first optimization
+    ROS_INFO("Done init");
   }
   else // warm start
   {
@@ -308,6 +310,8 @@ bool TebOptimalPlanner::plan(const PoseSE2& start, const PoseSE2& goal, const ge
       teb_.initTrajectoryToGoal(start, goal, 0, cfg_->robot.max_vel_x, cfg_->trajectory.min_samples, cfg_->trajectory.allow_init_with_backwards_motion);
     }
   }
+
+  ROS_INFO("Middle");
   if (start_vel)
     setVelocityStart(*start_vel);
   if (free_goal_vel)
@@ -316,6 +320,7 @@ bool TebOptimalPlanner::plan(const PoseSE2& start, const PoseSE2& goal, const ge
     vel_goal_.first = true; // we just reactivate and use the previously set velocity (should be zero if nothing was modified)
       
   // now optimize
+  ROS_INFO("End Plan");
   return optimizeTEB(cfg_->optim.no_inner_iterations, cfg_->optim.no_outer_iterations);
 }
 

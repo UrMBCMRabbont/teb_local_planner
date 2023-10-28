@@ -1,0 +1,8 @@
+<launch>
+	
+  	<!--- Run optimization test node -->
+   	<node pkg="teb_local_planner" type="sample_cv_bridge_node" name="sample_cv_bridge_node" output="screen" />
+
+
+</launch>
+

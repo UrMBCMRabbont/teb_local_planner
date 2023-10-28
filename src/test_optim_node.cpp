@@ -92,7 +92,7 @@ int main( int argc, char** argv )
   dynamic_recfg->setCallback(cb);
   
   // setup callback for custom obstacles
-  custom_obst_sub = n.subscribe("obstacles", 1, CB_customObstacle);
+  custom_obst_sub = n.subscribe("/obstacles", 1, CB_customObstacle);
   
   // setup callback for clicked points (in rviz) that are considered as via-points
   clicked_points_sub = n.subscribe("/clicked_point", 5, CB_clicked_points);
@@ -106,26 +106,12 @@ int main( int argc, char** argv )
   obst_vector.push_back( boost::make_shared<PointObstacle>(-3,1) );
   obst_vector.push_back( boost::make_shared<PointObstacle>(6,2) );
   obst_vector.push_back( boost::make_shared<PointObstacle>(0,0.1) );
-//  obst_vector.push_back( boost::make_shared<LineObstacle>(1,1.5,1,-1.5) ); //90 deg
-//  obst_vector.push_back( boost::make_shared<LineObstacle>(1,0,-1,0) ); //180 deg
-//  obst_vector.push_back( boost::make_shared<PointObstacle>(-1.5,-0.5) );
 
   // Dynamic obstacles
   Eigen::Vector2d vel (0.1, -0.3);
   obst_vector.at(0)->setCentroidVelocity(vel);
   vel = Eigen::Vector2d(-0.3, -0.2);
   obst_vector.at(1)->setCentroidVelocity(vel);
-
-  /*
-  PolygonObstacle* polyobst = new PolygonObstacle;
-  polyobst->pushBackVertex(1, -1);
-  polyobst->pushBackVertex(0, 1);
-  polyobst->pushBackVertex(1, 1);
-  polyobst->pushBackVertex(2, 1);
- 
-  polyobst->finalizePolygon();
-  obst_vector.emplace_back(polyobst);
-  */
   
   for (unsigned int i=0; i<obst_vector.size(); ++i)
   {
@@ -154,9 +140,9 @@ int main( int argc, char** argv )
     planner = PlannerInterfacePtr(new HomotopyClassPlanner(config, &obst_vector, visual, &via_points));
   else
     planner = PlannerInterfacePtr(new TebOptimalPlanner(config, &obst_vector, visual, &via_points));
-  
 
   no_fixed_obstacles = obst_vector.size();
+  ROS_INFO("I am AMber %d",no_fixed_obstacles);
   ros::spin();
 
   return 0;
@@ -165,15 +151,21 @@ int main( int argc, char** argv )
 // Planning loop
 void CB_mainCycle(const ros::TimerEvent& e)
 {
+  ROS_INFO("Bye000");
   planner->plan(PoseSE2(-4,0,0), PoseSE2(4,0,0)); // hardcoded start and goal for testing purposes
+  ROS_INFO("Bye111");
 }
 
 // Visualization loop
 void CB_publishCycle(const ros::TimerEvent& e)
 {
+  ROS_INFO("Hi000");
   planner->visualize();
+  ROS_INFO("Hi111");
   visual->publishObstacles(obst_vector);
+  ROS_INFO("Hi222");
   visual->publishViaPoints(via_points);
+  ROS_INFO("Hi333");
 }
 
 void CB_reconfigure(TebLocalPlannerReconfigureConfig& reconfig, uint32_t level)
@@ -249,9 +241,9 @@ void CB_obstacle_marker(const visualization_msgs::InteractiveMarkerFeedbackConst
 
 void CB_customObstacle(const costmap_converter::ObstacleArrayMsg::ConstPtr& obst_msg)
 {
+  ROS_INFO("Received Data from Amber %d",obst_msg->obstacles.size());
   // resize such that the vector contains only the fixed obstacles specified inside the main function
   obst_vector.resize(no_fixed_obstacles);
-  
   // Add custom obstacles obtained via message (assume that all obstacles coordiantes are specified in the default planning frame)  
   for (size_t i = 0; i < obst_msg->obstacles.size(); ++i)
   {
@@ -289,6 +281,7 @@ void CB_customObstacle(const costmap_converter::ObstacleArrayMsg::ConstPtr& obst
     if(!obst_vector.empty())
       obst_vector.back()->setCentroidVelocity(obst_msg->obstacles.at(i).velocities, obst_msg->obstacles.at(i).orientation);
   }
+  ROS_INFO("Hi");
 }
 
 

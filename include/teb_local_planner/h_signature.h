@@ -45,6 +45,7 @@
 #include <teb_local_planner/teb_config.h>
 #include <teb_local_planner/timed_elastic_band.h>
 
+#include <boost/math/special_functions/sign.hpp>
 #include <ros/ros.h>
 #include <math.h>
 #include <algorithm>
