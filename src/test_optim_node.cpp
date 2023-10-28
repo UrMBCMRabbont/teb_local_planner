@@ -35,7 +35,7 @@
  *
  * Author: Christoph Rösmann
  *********************************************************************/
-
+#include <teb_local_planner/sample_cv_bridge_node.hpp>
 #include <teb_local_planner/teb_local_planner_ros.h>
 
 #include <interactive_markers/interactive_marker_server.h>
@@ -71,6 +71,7 @@ void CB_obstacle_marker(const visualization_msgs::InteractiveMarkerFeedbackConst
 void CB_clicked_points(const geometry_msgs::PointStampedConstPtr& point_msg);
 void CB_via_points(const nav_msgs::Path::ConstPtr& via_points_msg);
 void CB_setObstacleVelocity(const geometry_msgs::TwistConstPtr& twist_msg, const unsigned int id);
+void poly_from_cv(Edge_Detector src);
 
 
 // =============== Main function =================
@@ -78,8 +79,12 @@ int main( int argc, char** argv )
 {
   ros::init(argc, argv, "test_optim_node");
   ros::NodeHandle n("~");
- 
-  
+  ROS_INFO("AMber runing");
+  Edge_Detector ic;
+  ROS_INFO("AMber pass the 0.5 level");
+  poly_from_cv(ic);
+  ROS_INFO("AMber pass the first level");
+
   // load ros parameters from node handle
   config.loadRosParamFromNodeHandle(n);
  
@@ -152,7 +157,7 @@ int main( int argc, char** argv )
 void CB_mainCycle(const ros::TimerEvent& e)
 {
   ROS_INFO("Bye000");
-  planner->plan(PoseSE2(-4,0,0), PoseSE2(4,0,0)); // hardcoded start and goal for testing purposes
+  planner->plan(PoseSE2(0.5,0.5,0), PoseSE2(4,0.5,0)); // hardcoded start and goal for testing purposes
   ROS_INFO("Bye111");
 }
 
@@ -282,6 +287,19 @@ void CB_customObstacle(const costmap_converter::ObstacleArrayMsg::ConstPtr& obst
       obst_vector.back()->setCentroidVelocity(obst_msg->obstacles.at(i).velocities, obst_msg->obstacles.at(i).orientation);
   }
   ROS_INFO("Hi");
+}
+void poly_from_cv(Edge_Detector src){
+  vector<vector<cv::Point>> obj_con = src.get_obj_pt();
+  for(int i = 0; i<obj_con.size();++i){
+    PolygonObstacle* polyobst = new PolygonObstacle;
+    for (size_t j=0; j<obj_con[i].size(); ++j)
+    {
+      polyobst->pushBackVertex( obj_con[i][j].x*0.1,
+                                obj_con[i][j].y*0.1 );
+    }
+    polyobst->finalizePolygon();
+    obst_vector.push_back(ObstaclePtr(polyobst));
+  }
 }
 
 

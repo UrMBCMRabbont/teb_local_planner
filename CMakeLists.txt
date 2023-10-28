@@ -221,12 +221,6 @@ target_link_libraries(teb_local_planner
    ${catkin_LIBRARIES}
 )
 
-add_executable(sample_cv_bridge_node src/sample_cv_bridge_node.cpp)
- target_link_libraries(sample_cv_bridge_node
-   ${catkin_LIBRARIES}
-   ${OpenCV_LIBRARIES}
-   ${PCL_LIBRARIES}
- )
 
 
 ## Build additional executables
@@ -236,6 +230,8 @@ add_executable(test_optim_node src/test_optim_node.cpp)
 target_link_libraries(test_optim_node
    teb_local_planner
    ${EXTERNAL_LIBS}
+   ${OpenCV_LIBRARIES}
+   ${PCL_LIBRARIES}
    ${catkin_LIBRARIES}
 )
 
