@@ -16,7 +16,6 @@ class Edge_Detector
 {
   ros::NodeHandle nh_;
   image_transport::ImageTransport it_;
-  ros::Subscriber obj_sub_;
   image_transport::Publisher image_pub_;
   cv::Mat global_map,src_gray;
   vector<vector<cv::Point>> obj_con;
@@ -29,8 +28,6 @@ public:
     // Subscribe to input video feed and publish output video feed
     ROS_INFO("HAHHAH1");
 
-    obj_sub_ = nh_.subscribe("/object_at_robot_height", 1, 
-      &Edge_Detector::imageCb, this);
     image_pub_ = it_.advertise("/edge_detector/raw_image", 1);
     global_map = cv::imread("/home/linuxlaitang/ORB_SLAM3/map/map.pgm", 0); 
     vector<vector<cv::Point>> contours;
@@ -62,23 +59,41 @@ public:
   {
     // cv::destroyWindow(OPENCV_WINDOW);
   }
+  void obj_get_con(pcl::PointCloud<pcl::PointXYZ> ptcloud)
+  {
+    cv::Mat local_map = cv::Mat::zeros(global_map.size(), CV_8UC1);;
+    for (size_t i = 0; i < ptcloud.points.size(); ++i) {
+        cv::Point pt1(ptcloud.points[i].x-1, ptcloud.points[i].y-1);
+        // and its bottom right corner.
+        cv::Point pt2(ptcloud.points[i].x+1, ptcloud.points[i].x+1);
+        // These two calls...
+        cv::rectangle(local_map, pt1, pt2, cv::Scalar(255, 255, 255));
+    }
+    vector<vector<cv::Point>> contours;
+    vector<cv::Vec4i> hierarchy,hierarchy2;
+    findContours(local_map,contours,hierarchy,cv::RETR_TREE,cv::CHAIN_APPROX_TC89_L1 ,cv::Point()); 
+        // Simplify the shape of each contour
+
+    std::vector<std::vector<cv::Point>> simplifiedContours(contours.size());
+    for (size_t i = 0; i < contours.size(); ++i) {
+        cv::approxPolyDP(contours[i], simplifiedContours[i],1.0, true);  // Adjust the epsilon value as needed
+    }
+
+    // Draw the simplified contours on a black image
+    cv::Mat resultImage = cv::Mat::zeros(global_map.size(), CV_8UC1);
+    cv::Mat resultImage2 = cv::Mat::zeros(global_map.size(), CV_8UC1);
+    ROS_INFO("start cv2");
+    cv::drawContours(resultImage, simplifiedContours, -1, cv::Scalar(255, 255, 255), FILLED);
+    findContours(resultImage,obj_con,hierarchy,cv::RETR_TREE,cv::CHAIN_APPROX_SIMPLE,cv::Point()); 
+    ROS_INFO("start cv3");
+    cv::drawContours(resultImage2, obj_con, -1, cv::Scalar(255, 255, 255), 1);
+    ROS_INFO("start cv4");
+      
+  }
   vector<vector<cv::Point>> get_obj_pt(){
     return obj_con;
-  }
-  void imageCb(const sensor_msgs::PointCloud2ConstPtr& msg)
-  {
-    pcl::PointCloud<pcl::PointXYZ> latest_cloud;
-	pcl::fromROSMsg(*msg, latest_cloud);
-
-	if (latest_cloud.points.size() == 0) return;
-
-	pcl::PointXYZ pt;
-	Eigen::Vector3d p3d, p3d_inf;
-
-	for (size_t i = 0; i < latest_cloud.points.size(); ++i) {
-		pt = latest_cloud.points[i];
-		
-	}
+  
+  
 	detect_edges(global_map);
     	// image_pub_.publish(cv_ptr->toImageMsg());
 

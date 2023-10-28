@@ -56,6 +56,7 @@ ViaPointContainer via_points;
 TebConfig config;
 boost::shared_ptr< dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig> > dynamic_recfg;
 ros::Subscriber custom_obst_sub;
+ros::Subscriber local_obst_sub;
 ros::Subscriber via_points_sub;
 ros::Subscriber clicked_points_sub;
 std::vector<ros::Subscriber> obst_vel_subs;
@@ -72,16 +73,16 @@ void CB_clicked_points(const geometry_msgs::PointStampedConstPtr& point_msg);
 void CB_via_points(const nav_msgs::Path::ConstPtr& via_points_msg);
 void CB_setObstacleVelocity(const geometry_msgs::TwistConstPtr& twist_msg, const unsigned int id);
 void poly_from_cv(Edge_Detector src);
-
-
+void CB_localObj(const sensor_msgs::PointCloud2ConstPtr& msg);
+Edge_Detector* e_ptr;
 // =============== Main function =================
 int main( int argc, char** argv )
 {
   ros::init(argc, argv, "test_optim_node");
   ros::NodeHandle n("~");
-  ROS_INFO("AMber runing");
   Edge_Detector ic;
-  ROS_INFO("AMber pass the 0.5 level");
+  e_ptr = &ic;
+  ROS_INFO("AMber runing");
   poly_from_cv(ic);
   ROS_INFO("AMber pass the first level");
 
@@ -98,6 +99,7 @@ int main( int argc, char** argv )
   
   // setup callback for custom obstacles
   custom_obst_sub = n.subscribe("/obstacles", 1, CB_customObstacle);
+  local_obst_sub = n.subscribe<sensor_msgs::PointCloud2>("/object_at_robot_height", 10, CB_localObj);
   
   // setup callback for clicked points (in rviz) that are considered as via-points
   clicked_points_sub = n.subscribe("/clicked_point", 5, CB_clicked_points);
@@ -147,30 +149,46 @@ int main( int argc, char** argv )
     planner = PlannerInterfacePtr(new TebOptimalPlanner(config, &obst_vector, visual, &via_points));
 
   no_fixed_obstacles = obst_vector.size();
-  ROS_INFO("I am AMber %d",no_fixed_obstacles);
+  // ROS_INFO("I am AMber %d",no_fixed_obstacles);
   ros::spin();
 
   return 0;
 }
+void CB_localObj(const sensor_msgs::PointCloud2ConstPtr& msg)
+{
+  ROS_INFO("Local object");
+  pcl::PointCloud<pcl::PointXYZ> latest_cloud;
+  pcl::fromROSMsg(*msg, latest_cloud);
 
+  if (latest_cloud.points.size() == 0){ 
+    ROS_INFO("Size is 0 hahahhah");
+    return;}
+  ROS_INFO("Ready cv");
+  pcl::PointXYZ pt;
+  Eigen::Vector3d p3d, p3d_inf;
+  e_ptr->obj_get_con(latest_cloud);
+  poly_from_cv(*e_ptr);
+
+  
+}
 // Planning loop
 void CB_mainCycle(const ros::TimerEvent& e)
 {
-  ROS_INFO("Bye000");
+  // ROS_INFO("Bye000");
   planner->plan(PoseSE2(0.5,0.5,0), PoseSE2(4,0.5,0)); // hardcoded start and goal for testing purposes
-  ROS_INFO("Bye111");
+  // ROS_INFO("Bye111");
 }
 
 // Visualization loop
 void CB_publishCycle(const ros::TimerEvent& e)
 {
-  ROS_INFO("Hi000");
+  // ROS_INFO("Hi000");
   planner->visualize();
-  ROS_INFO("Hi111");
+  // ROS_INFO("Hi111");
   visual->publishObstacles(obst_vector);
-  ROS_INFO("Hi222");
+  // ROS_INFO("Hi222");
   visual->publishViaPoints(via_points);
-  ROS_INFO("Hi333");
+  // ROS_INFO("Hi333");
 }
 
 void CB_reconfigure(TebLocalPlannerReconfigureConfig& reconfig, uint32_t level)
@@ -246,7 +264,7 @@ void CB_obstacle_marker(const visualization_msgs::InteractiveMarkerFeedbackConst
 
 void CB_customObstacle(const costmap_converter::ObstacleArrayMsg::ConstPtr& obst_msg)
 {
-  ROS_INFO("Received Data from Amber %d",obst_msg->obstacles.size());
+  // ROS_INFO("Received Data from Amber %d",obst_msg->obstacles.size());
   // resize such that the vector contains only the fixed obstacles specified inside the main function
   obst_vector.resize(no_fixed_obstacles);
   // Add custom obstacles obtained via message (assume that all obstacles coordiantes are specified in the default planning frame)  
@@ -286,7 +304,7 @@ void CB_customObstacle(const costmap_converter::ObstacleArrayMsg::ConstPtr& obst
     if(!obst_vector.empty())
       obst_vector.back()->setCentroidVelocity(obst_msg->obstacles.at(i).velocities, obst_msg->obstacles.at(i).orientation);
   }
-  ROS_INFO("Hi");
+  // ROS_INFO("Hi");
 }
 void poly_from_cv(Edge_Detector src){
   vector<vector<cv::Point>> obj_con = src.get_obj_pt();
